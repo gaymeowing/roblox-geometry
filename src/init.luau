@@ -587,4 +587,4 @@ function Geometry.blackboxFindClosestMeshEdge(hit: RaycastResult, viewDirection:
 	return exploreEdge(part, origin, dir, n, n2, worldRoot)
 end
 
-return Geometry
+return table.freeze(Geometry)
