@@ -143,7 +143,7 @@ do -- getGeometry
 			elseif part.Shape == Enum.PartType.Wedge then
 				return "Wedge"
 			else
-				assert(false, "Unreachable")
+				error("Unreachable")
 			end
 		else
 			return "Brick"
