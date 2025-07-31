@@ -404,12 +404,11 @@ end
 local function findNearestInterestingPoint(
 	mainBasis: CFrame,
 	part: BasePart,
-	worldRoot: WorldRoot?
+	worldRoot: WorldRoot
 ): (Vector3?, UnitVector?)
 	local main_basis_y_vector = mainBasis.YVector
 	local OFF_SURFACE = 1.0
 	local DOWN_VECTOR = -main_basis_y_vector * (vector.magnitude(part.Size) + OFF_SURFACE)
-	worldRoot = worldRoot or Workspace
 
 	--[[
 		Explore outwards in a cross pattern, doubling the distance every time
@@ -494,7 +493,7 @@ local function exploreEdge(
 	dir: Vector3,
 	normal: Vector3,
 	normal2: Vector3,
-	worldRoot: WorldRoot?
+	worldRoot: WorldRoot
 ): Edge?
 	local PART_SIZE = part.Size
 	local MAX_LENGTH = vector.magnitude(PART_SIZE)
@@ -563,6 +562,7 @@ local function exploreEdge(
 end
 
 function Geometry.blackboxFindClosestMeshEdge(hit: RaycastResult, viewDirection: Vector3, worldRoot: WorldRoot?): Edge?
+	worldRoot = worldRoot or Workspace
 	local part = hit.Instance :: BasePart
 
 	-- We have a current plane defined by p,n
@@ -576,7 +576,7 @@ function Geometry.blackboxFindClosestMeshEdge(hit: RaycastResult, viewDirection:
 
 	-- We want to explore outwards over this plane until we find where it ends
 	-- (that is, where parallel raycasts diverge from the plane)
-	local p2, n2 = findNearestInterestingPoint(mainBasis, part)
+	local p2, n2 = findNearestInterestingPoint(mainBasis, part, worldRoot)
 
 	-- Find the axis which goes through both (p, n) and (p2, n2)
 	local origin, dir = intersectPlanePlane(p, n, p2, n2)
