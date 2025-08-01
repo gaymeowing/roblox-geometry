@@ -254,8 +254,8 @@ do -- getGeometry
 			local absNorm = vector.abs(norm)
 
 			-- stylua: ignore
-			local surfaceName = if absNorm.x > absNorm.y and absNorm.x > absNorm.z then 
-					(if norm.x > 0 then "RightSurface" else "LeftSurface") 
+			local surfaceName = if absNorm.x > absNorm.y and absNorm.x > absNorm.z then
+					(if norm.x > 0 then "RightSurface" else "LeftSurface")
 				elseif absNorm.y > absNorm.z then
 					(if norm.y > 0 then "TopSurface" else "BottomSurface")
 				else
@@ -500,7 +500,6 @@ local function exploreEdge(
 	local HOVER_POINT_1 = origin + normal * 0.01 - normal2 * 0.01
 	local HOVER_POINT_2 = origin + normal2 * 0.01 - normal * 0.01
 	local SINK_POINT = origin - normal * 0.01 - normal2 * 0.01
-	worldRoot = worldRoot or Workspace
 
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
@@ -522,15 +521,12 @@ local function exploreEdge(
 
 	-- Find a negative clip plane for edge (origin, dir)
 	local negativeHit = worldRoot:Raycast(HOVER_POINT_1, -span, params)
-
 	if not negativeHit then
 		negativeHit = worldRoot:Raycast(HOVER_POINT_2, -span, params)
 	end
-
 	if not negativeHit then
 		negativeHit = worldRoot:Raycast(SINK_POINT - span, span, params)
 	end
-
 	if not negativeHit then
 		return nil
 	end
