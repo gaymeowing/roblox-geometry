@@ -192,7 +192,7 @@ do -- getGeometry
 		Box, WedgePart, CornerWedgePart, Sphere, or Cylinder. It contains all the
 		logic to decide which of those geometries is appropriate for a given BasePart.
 
-		You can optionally pass a CFrame as the third argument to get the geometry assuming that
+		You can optionally pass a CFrame as the second argument to get the geometry assuming that
 		the part were at that CFrame rather than where it currently is.
 		Note: Passing CFrame.identity here will effectively give you the geometry in the
 		local space of the object rather than in world space like it is normally given.
@@ -204,7 +204,7 @@ do -- getGeometry
 		perpendicular to the feature, and can be used to determine a
 		reasonable sizing of visualizations around the feature.
 	]]
-	function Geometry.getGeometry(part: BasePart, hit: Vector3, assumedCFrame: CFrame?): GeometryResult
+	function Geometry.getGeometry(part: BasePart, assumedCFrame: CFrame?): GeometryResult
 		CURRENT_PART = part
 		CURRENT_ID = 0
 
@@ -281,24 +281,6 @@ do -- getGeometry
 
 			-- making the verts table
 			verts = { vert1, vert2, vert3, vert4, vert5, vert6, vert7, vert8 }
-		elseif shape == "Sphere" or shape == "Cylinder" then
-			local norm = vector.normalize(hit - pos)
-			local norm2 = vector.normalize(vector.cross(norm, vector.create(0, 1, 0)))
-			local absNorm = vector.abs(norm)
-
-			-- stylua: ignore
-			local surfaceName = if absNorm.x > absNorm.y and absNorm.x > absNorm.z then
-					(if norm.x > 0 then "RightSurface" else "LeftSurface")
-				elseif absNorm.y > absNorm.z then
-					(if norm.y > 0 then "TopSurface" else "BottomSurface")
-				else
-					(if norm.z > 0 then "BackSurface" else "FrontSurface")
-
-			faces = { createFace(hit, norm, surfaceName, norm2, {}) }
-			-- edge can be selected as the normal of the face if the user needs it
-			edges = {}
-			-- Just have one face and vertex, at the hit pos
-			verts = { createVertex(hit) }
 		elseif shape == "CornerWedge" then
 			local slantVec1 = vector.normalize(zvec * sy + yvec * sz)
 			local slantVec2 = vector.normalize(-xvec * sy + yvec * sx)
