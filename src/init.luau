@@ -1,10 +1,25 @@
 local Workspace = game:GetService("Workspace")
 
-export type SurfaceType = "BottomSurface" | "TopSurface" | "LeftSurface" | "RightSurface" | "FrontSurface" | "BackSurface"
+export type SurfaceType =
+	| "BottomSurface"
+	| "RightSurface"
+	| "FrontSurface"
+	| "LeftSurface"
+	| "BackSurface"
+	| "TopSurface"
 
-export type Shape = | "Cylinder" | "Sphere" | "Mesh"
+export type Shape =
+	| "Cylinder"
+	| "Sphere"
+	| "Mesh"
 
-type InternalShape = | "CornerWedge" | "Cylinder" | "Terrain" | "Sphere" | "Brick" | "Wedge"
+type InternalShape =
+	| "CornerWedge"
+	| "Cylinder"
+	| "Terrain"
+	| "Sphere"
+	| "Brick"
+	| "Wedge"
 
 type Identifier<T> = {
 	type: T,
@@ -404,8 +419,9 @@ end
 local function findNearestInterestingPoint(
 	mainBasis: CFrame,
 	part: BasePart,
-	worldRoot: WorldRoot
-): (Vector3?, UnitVector?)
+	worldRoot: WorldRoot,
+	raycastParams: RaycastParams
+): (Vector3, UnitVector)
 	local main_basis_y_vector = mainBasis.YVector
 	local OFF_SURFACE = 1.0
 	local DOWN_VECTOR = -main_basis_y_vector * (vector.magnitude(part.Size) + OFF_SURFACE)
@@ -418,10 +434,6 @@ local function findNearestInterestingPoint(
 		      |
 		      V
 	]]
-
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { part }
 	local distanceStep = 0.01
 
 	for i = 1, 12 do
@@ -429,7 +441,7 @@ local function findNearestInterestingPoint(
 			for dz = -1, 1, 2 do
 				local localPosition = vector.create(dx * distanceStep, OFF_SURFACE, dz * distanceStep)
 				local castFrom = mainBasis:PointToWorldSpace(localPosition)
-				local hit = worldRoot:Raycast(castFrom, DOWN_VECTOR, params)
+				local hit = worldRoot:Raycast(castFrom, DOWN_VECTOR, raycastParams)
 
 				if hit then
 					if math.abs(hit.Distance - OFF_SURFACE) > 0.001 then
@@ -440,7 +452,7 @@ local function findNearestInterestingPoint(
 					-- origin to find the edge / backface we missed
 					castFrom -= main_basis_y_vector * (OFF_SURFACE + 0.1)
 					local backToOrigin = (mainBasis.Position - castFrom)
-					local sideHit = worldRoot:Raycast(castFrom, backToOrigin, params)
+					local sideHit = worldRoot:Raycast(castFrom, backToOrigin, raycastParams)
 
 					if sideHit then
 						return sideHit.Position, sideHit.Normal
@@ -476,56 +488,48 @@ local function intersectPlanePlane(p1: Vector3, n1: Vector3, p2: Vector3, n2: Ve
 	return origin, dir
 end
 
+--[[
 -- Insersect Ray(a + t*b) with plane (origin: o, normal: n), return t of the interesection
 local function intersectRayPlane(a: Vector3, b: Vector3, o: Vector3, n: Vector3): number
 	return vector.dot((o - a), n) / vector.dot(b, n)
 end
+]]
 
 -- Intersect Ray(a + t*b) with plane (origin: o, normal :n), and return the intersection as Vector3
 local function intersectRayPlanePoint(a: Vector3, b: Vector3, o: Vector3, n: Vector3): Vector3
-	local t = intersectRayPlane(a, b, o, n)
-	return a + t * b
+	return a + (vector.dot((o - a), n) / vector.dot(b, n)) * b
 end
 
 local function exploreEdge(
-	part: BasePart,
-	origin: Vector3,
-	dir: Vector3,
-	normal: Vector3,
-	normal2: Vector3,
-	worldRoot: WorldRoot
+	part: BasePart, origin: Vector3, dir: Vector3, normal: Vector3,
+	normal2: Vector3, worldRoot: WorldRoot, raycastParams: RaycastParams
 ): Edge?
 	local PART_SIZE = part.Size
 	local MAX_LENGTH = vector.magnitude(PART_SIZE)
 	local HOVER_POINT_1 = origin + normal * 0.01 - normal2 * 0.01
 	local HOVER_POINT_2 = origin + normal2 * 0.01 - normal * 0.01
 	local SINK_POINT = origin - normal * 0.01 - normal2 * 0.01
-
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { part }
-
 	local span = dir * MAX_LENGTH
 
 	-- Find a positive clip plane for edge (origin, dir)
-	local positiveHit = worldRoot:Raycast(HOVER_POINT_1, span, params)
+	local positiveHit = worldRoot:Raycast(HOVER_POINT_1, span, raycastParams)
 	if not positiveHit then
-		positiveHit = worldRoot:Raycast(HOVER_POINT_2, span, params)
+		positiveHit = worldRoot:Raycast(HOVER_POINT_2, span, raycastParams)
 	end
 	if not positiveHit then
-		positiveHit = worldRoot:Raycast(SINK_POINT + span, -span, params)
+		positiveHit = worldRoot:Raycast(SINK_POINT + span, -span, raycastParams)
 	end
 	if not positiveHit then
 		return nil
 	end
 
 	-- Find a negative clip plane for edge (origin, dir)
-	local negativeHit = worldRoot:Raycast(HOVER_POINT_1, -span, params)
+	local negativeHit = worldRoot:Raycast(HOVER_POINT_1, -span, raycastParams)
 	if not negativeHit then
-		negativeHit = worldRoot:Raycast(HOVER_POINT_2, -span, params)
+		negativeHit = worldRoot:Raycast(HOVER_POINT_2, -span, raycastParams)
 	end
 	if not negativeHit then
-		negativeHit = worldRoot:Raycast(SINK_POINT - span, span, params)
+		negativeHit = worldRoot:Raycast(SINK_POINT - span, span, raycastParams)
 	end
 	if not negativeHit then
 		return nil
@@ -560,6 +564,9 @@ end
 function Geometry.blackboxFindClosestMeshEdge(hit: RaycastResult, viewDirection: Vector3, worldRoot: WorldRoot?): Edge?
 	worldRoot = worldRoot or Workspace
 	local part = hit.Instance :: BasePart
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { part }
 
 	-- We have a current plane defined by p,n
 	local p = hit.Position
@@ -567,12 +574,10 @@ function Geometry.blackboxFindClosestMeshEdge(hit: RaycastResult, viewDirection:
 
 	-- Basis within which we're about to do stuff
 	local mainBasis = CFrame.fromMatrix(p, perpendicularVector(n), n)
-	local xBasis = mainBasis.XVector
-	local zBasis = mainBasis.ZVector
 
 	-- We want to explore outwards over this plane until we find where it ends
 	-- (that is, where parallel raycasts diverge from the plane)
-	local p2, n2 = findNearestInterestingPoint(mainBasis, part, worldRoot)
+	local p2, n2 = findNearestInterestingPoint(mainBasis, part, worldRoot, params)
 
 	-- Find the axis which goes through both (p, n) and (p2, n2)
 	local origin, dir = intersectPlanePlane(p, n, p2, n2)
@@ -580,7 +585,7 @@ function Geometry.blackboxFindClosestMeshEdge(hit: RaycastResult, viewDirection:
 	-- (origin, dir) is now a ray along the edge of interest. From here we have
 	-- to figure out how LONG the edge is along that ray. We know that origin is
 	-- ONE of the points on the ray, so we can raycast out from there.
-	return exploreEdge(part, origin, dir, n, n2, worldRoot)
+	return exploreEdge(part, origin, dir, n, n2, worldRoot, params)
 end
 
 return table.freeze(Geometry)
