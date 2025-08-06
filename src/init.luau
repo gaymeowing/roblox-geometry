@@ -186,6 +186,24 @@ do -- getGeometry
 		return CREATE_EDGE(CURRENT_ID, a, b, CURRENT_VERTEX_MARGIN, edgeMargin, CURRENT_PART)
 	end
 
+	--[[
+		This is a function which returns a detailed mesh representation of the geometry of a
+		Roblox primitive. That is, one of the five primitive types between a
+		Box, WedgePart, CornerWedgePart, Sphere, or Cylinder. It contains all the
+		logic to decide which of those geometries is appropriate for a given BasePart.
+
+		You can optionally pass a CFrame as the third argument to get the geometry assuming that
+		the part were at that CFrame rather than where it currently is.
+		Note: Passing CFrame.identity here will effectively give you the geometry in the
+		local space of the object rather than in world space like it is normally given.
+
+		The id on each element is a stable id from invocation to invocation allowing you to
+		track the same element across multiple invocations.
+
+		The vertexMargin / edgeMargin are the minimum amount of "safe" space
+		perpendicular to the feature, and can be used to determine a
+		reasonable sizing of visualizations around the feature.
+	]]
 	function Geometry.getGeometry(part: BasePart, hit: Vector3, assumedCFrame: CFrame?): GeometryResult
 		CURRENT_PART = part
 		CURRENT_ID = 0
@@ -561,6 +579,15 @@ local function exploreEdge(
 	return edge
 end
 
+--[[
+	For mouse hit in the form of a RaycastResult, find the edge closest to that hit.
+	The edge is returned in the same GeometryEdge format as
+	edges in the table returned by getGeometry.
+
+	This function may be used for hits against primitive parts, but
+	keep in mind that it will never return a result for Spheres / Cylinders since there
+	aren't any straight edges to find.
+]]
 function Geometry.blackboxFindClosestMeshEdge(hit: RaycastResult, viewDirection: Vector3, worldRoot: WorldRoot?): Edge?
 	worldRoot = worldRoot or Workspace
 	local part = hit.Instance :: BasePart
